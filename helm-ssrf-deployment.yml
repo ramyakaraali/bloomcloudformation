@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Ssrf Helm Charts
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Kube Cluster
+        Parameters:
+          - KubeClusterName
+    ParameterLabels:
+      KubeClusterName:
+        default: EKS Kube Cluster Name
+Parameters:
+   KubeClusterName:
+    Description: 'Use the "EKSClusterName" from the EKSStack outputs section in CloudFormation.'
+    Type: String
+   Namespace:
+    Description: 'Modify to use a custom Namespace.'
+    Type: String
+    Default: "example-helm"
+   Name:
+    Description: 'Modify to use a custom Names.'
+    Type: String
+    Default: "myrelease"
+Resources:
+  HelmExample:
+    Type: "AWSQS::Kubernetes::Helm"
+    Properties:
+      Repository: https://ramyaksingh98.github.io/helm-charts/
+      ClusterID: !Ref KubeClusterName
+      Namespace: !Ref Namespace
+      Chart: githubhelmrepo/attackdemo
+      Name: !Ref Name
+
