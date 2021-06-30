@@ -431,7 +431,7 @@ Resources:
       cfn-lint: { config: { ignore_checks: [ W9901, E9902 ] } }
     Properties:
       TemplateURL: !Sub
-        - 'https://araalinetworks-bloomdemo-cloudformation.s3.us-west-2.amazonaws.com/amazon-eks.template.yml'
+        - 'https://s3.ap-southeast-1.amazonaws.com/araalinetworks.bloomdemo.cloudformation/amazon-eks.template.yml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
