@@ -193,7 +193,7 @@ Resources:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-iam.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-iam.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -205,7 +205,7 @@ Resources:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-functions.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-functions.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -231,7 +231,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-cluster-autoscaler.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-cluster-autoscaler.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -246,7 +246,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-metrics-server.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-metrics-server.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -259,7 +259,7 @@ Resources:
         - !Ref ControlPlaneSecurityGroupIngress
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-efs.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-efs.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -303,7 +303,7 @@ Resources:
     DependsOn: [CleanupControlPlaneSecurityGroupDependencies, ControlPlaneSecurityGroupIngress, FunctionStack]
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-controlplane.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-controlplane.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -347,7 +347,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-load-balancer-controller.template.yaml'
+        - 'https://${S3Bucket}.s3.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-load-balancer-controller.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
