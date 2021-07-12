@@ -1,0 +1,314 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+
+  BuildId:
+    Type: String
+    Default: "#{codepipeline.PipelineExecutionId}"
+
+  Branch:
+    Type: String
+    Default: candela
+
+  AppDeploymentUrl:
+    Type: String
+    Default: candela/k8s/case-runtime-deployment.yml
+
+  AppServiceUrl:
+    Type: String
+    Default: candela/k8s/case-runtime-svc.yml
+
+  ImageUrl:
+    Type: String
+
+  Repo:
+    Type: String
+    Default: bloom-apps
+
+  GitHubUser:
+    Type: String
+    Default: cldcvr-github-automation-bloomgit
+
+  OAuthToken:
+    Type: String
+    Default: 6d0ab4ddb2da7b1f90963da53b386072ec2d0ee2
+
+  Owner:
+    Type: String
+    Default: cldcvr
+
+
+  ApplicationName:
+    Description: Name of the Base Stack
+    Type: String
+    Default: "venture-hero"
+
+
+Resources:
+
+  AppEc2Instance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          operation:
+            - "cfnhup"
+            - "enableLogging"
+            - "getBuildId"
+            - "kubectl"
+            - "initiateWorkdir"
+            - "deployApp"
+
+          changeSet:
+            - "getBuildId"
+            - "updateApp"
+        cfnhup:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackName}
+                region=${AWS::Region}
+                interval=1
+              mode: "000400"
+              owner: "root"
+              group: "root"
+
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.AppEc2Instance.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AppEc2Instance --configsets changeSet --region ${AWS::Region}
+                runas=root
+              mode: "000400"
+              owner: "root"
+              group: "root"
+
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: "true"
+                ensureRunning: "true"
+                files:
+                  - "/etc/cfn/cfn-hup.conf"
+                  - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+
+        enableLogging:
+          packages:
+            yum:
+              awslogs: []
+          files:
+            /etc/awslogs/awscli.conf:
+              content: !Sub |
+                [plugins]
+                cwlogs = cwlogs
+                [default]
+                region = ${AWS::Region}
+            /etc/awslogs/awslogs.conf:
+              content: !Sub |
+                [general]
+                state_file = /var/lib/awslogs/agent-state
+                use_gzip_http_content_encoding = false
+                [/var/log/cfn-init.log]
+                datetime_format = %b %d %H:%M:%S
+                file = /var/log/cfn-init.log
+                buffer_duration = 5000
+                log_stream_name = ${AWS::StackName}
+                initial_position = start_of_file
+                log_group_name = /aws/eks/app
+                region = ${AWS::Region}
+          services:
+            sysvinit:
+              awslogsd:
+                enabled: "true"
+                ensureRunning: "true"
+                files:
+                  - "/etc/awslogs/awslogs.conf"
+                  - "/etc/aws/logs/awscli.conf"
+
+
+        getBuildId:
+          commands:
+            printId:
+              command: !Sub "echo ${BuildId}"
+
+
+        kubectl:
+          files:
+            /tmp/initcluster.sh:
+              content:  !Sub
+                - |
+                  sudo curl -o /opt/kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.17.7/2020-07-08/bin/linux/amd64/kubectl
+                  sudo chmod +x /opt/kubectl
+                  sudo mv /opt/kubectl /usr/bin
+                  aws eks --region ${AWS::Region} update-kubeconfig --name ${Cluster}
+                - Cluster:
+                    Fn::ImportValue:
+                      Fn::Sub: "${ApplicationName}-Cluster"
+              mode: "000777"
+              owner: "root"
+              group: "root"
+          commands:
+            a-initcluster:
+              command: "bash /tmp/initcluster.sh"
+
+        initiateWorkdir:
+          packages:
+            yum:
+              git: []
+              bind-utils: []
+          commands:
+            a-initWorkspace:
+              command: "sudo mkdir /app-deployments"
+            b-getFromGit:
+              command: !Sub "sudo git clone -b ${Branch} https://${GitHubUser}:${OAuthToken}@github.com/${Owner}/${Repo}.git"
+              cwd: "/app-deployments"
+
+        deployApp:
+          commands:
+            a-getImageName:
+              command: !Sub "sudo sed -i 's,<ImageUrl>,${ImageUrl},g' ${Repo}/${AppDeploymentUrl}"
+              cwd: "/app-deployments"
+            b-AppDeployment:
+              command: !Sub "sudo kubectl apply -f ${Repo}/${AppDeploymentUrl}"
+              cwd: "/app-deployments"
+            c-ServiceDeployment:
+              command: !Sub "sudo kubectl apply -f ${Repo}/${AppServiceUrl}"
+              cwd: "/app-deployments"
+            d-shutdown:
+              command: "sudo shutdown -h now"
+
+
+        updateApp:
+          commands:
+            a-setupDeployment:
+              command: !Sub "rm -rf ${Repo}"
+              cwd: "/app-deployments"
+            b-getFromGit:
+              command: !Sub "sudo git clone -b ${Branch} https://${GitHubUser}:${OAuthToken}@github.com/${Owner}/${Repo}.git"
+              cwd: "/app-deployments"
+            c-getImageName:
+              command: !Sub "sudo sed -i 's,<ImageUrl>,${ImageUrl},g' ${Repo}/${AppDeploymentUrl}"
+              cwd: "/app-deployments"
+            d-upgradeDeployment:
+              command: !Sub "sudo kubectl apply -f ${Repo}/${AppDeploymentUrl}"
+              cwd: "/app-deployments"
+            e-upgradeService:
+              command: !Sub "sudo kubectl apply -f ${Repo}/${AppServiceUrl}"
+              cwd: "/app-deployments"
+            f-shutdown:
+              command: "sudo shutdown -h now"
+
+    Properties:
+      ImageId: ami-0cd31be676780afa7  # Amazon Linux 2 ami
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}"
+      SecurityGroupIds:
+        - Fn::ImportValue:
+            Fn::Sub: "${ApplicationName}-ControlPlaneSecurityGroupId"
+      SubnetId:
+        Fn::ImportValue:
+          Fn::Sub: "${ApplicationName}-Private-Subnet-01"
+      IamInstanceProfile:
+        Fn::ImportValue:
+          Fn::Sub: "${ApplicationName}-AdminIamInstanceProfile"
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -x
+            - |
+              # Install the files and packages from the metadata
+            - '/opt/aws/bin/cfn-init -v '
+            - '-c operation'
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource AppEc2Instance '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - |+
+            - |
+              # Signal the status from cfn-init
+            - '/opt/aws/bin/cfn-signal -e $? '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource AppEc2Instance '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - |+
+  ########################################### Lambda and cloudwatch event to update stack ###########################
+
+  UpdateStackFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-update-stack"
+      Description: !Sub  "Start the ${AWS::StackName} ops server on update stack event to initiate cfn hup service"
+      Handler: index.lambda_handler
+      Role:
+        Fn::ImportValue:
+          Fn::Sub: "${ApplicationName}-LambdaExecutionRoleArn"
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          region = '${AWS::Region}'
+          ec2 = boto3.client('ec2', region_name=region)
+          instances=['${AppEc2Instance}']
+          def lambda_handler(event, context):
+              if event['detail']['requestParameters']['stackName'] == '${AWS::StackName}':
+                  ec2.start_instances(InstanceIds=instances)
+                  print('started your instance: ' + str(instances))
+      Runtime: python3.6
+      Timeout: 10
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue:
+              Fn::Sub: "${ApplicationName}-ControlPlaneSecurityGroupId"
+        SubnetIds:
+          - Fn::ImportValue:
+              Fn::Sub: "${ApplicationName}-Private-Subnet-01"
+          - Fn::ImportValue:
+              Fn::Sub: "${ApplicationName}-Private-Subnet-02"
+
+  StackUpdateRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${AWS::StackName}-update-rule"
+      Description: "Rule to trigger lambda function to start the instances"
+      EventPattern: |
+        {
+          "source": [
+            "aws.cloudformation"
+          ],
+          "detail-type": [
+            "AWS API Call via CloudTrail"
+          ],
+          "detail": {
+            "eventSource": [
+              "cloudformation.amazonaws.com"
+            ],
+            "eventName": [
+              "UpdateStack"
+            ]
+          }
+        }
+      State: "ENABLED"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - "UpdateStackFunction"
+              - "Arn"
+          Id: !Sub "${AWS::StackName}-TargetFunctionV1"
+
+  EventMappingToLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref UpdateStackFunction
+      Principal: events.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt StackUpdateRule.Arn
+
+
+  #############################################################################################################
