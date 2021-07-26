@@ -22,6 +22,10 @@ Parameters:
     Description: 'Modify to use a custom Names.'
     Type: String
     Default: "myrelease"
+   ImageUrl:
+    Description: 'ImageUrl'
+    Type: String
+    Default: "ramyakaraali/ssrf"
 Resources:
   HelmExample:
     Type: "AWSQS::Kubernetes::Helm"
@@ -31,4 +35,7 @@ Resources:
       Namespace: !Ref Namespace
       Chart: githubhelmrepo/attackdemo
       Name: !Ref Name
+      ValueYaml: !Sub
+          - "image: ${ImageUrl}"
+          - { ImageUrl: !Ref ImageUrl }
 
