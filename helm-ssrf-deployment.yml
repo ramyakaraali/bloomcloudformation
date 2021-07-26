@@ -7,9 +7,15 @@ Metadata:
           default: Kube Cluster
         Parameters:
           - KubeClusterName
+      - Label:
+          default: Image Url
+        Parameters:
+          - ImageUrl
     ParameterLabels:
       KubeClusterName:
         default: EKS Kube Cluster Name
+      ImageUrl:
+        default: "ramyakaraali/ssrf"
 Parameters:
    KubeClusterName:
     Description: 'Use the "EKSClusterName" from the EKSStack outputs section in CloudFormation.'
